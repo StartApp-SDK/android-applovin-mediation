@@ -17,7 +17,7 @@ hs_err_pid*
 
 /bin/
 /target/
-/build/
+build
 .gradle/*
 
 local.properties

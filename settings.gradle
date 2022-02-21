@@ -1,2 +1,4 @@
 rootProject.name = "AppLovin - Start.io"
-include ':app'
+
+include ':adapter'
+include ':example'
