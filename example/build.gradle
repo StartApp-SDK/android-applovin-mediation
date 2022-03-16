@@ -27,9 +27,9 @@ android {
         ]
 
         def mapBody = '\n'
-        ['applovin.ad.banner', 'applovin.ad.mrec', 'applovin.ad.native', 'applovin.ad.interstitial', 'applovin.ad.rewarded'].each {
-            if (local.containsKey(it)) {
-                mapBody += "put(\"$it\", \"${local.get(it)}\");\n"
+        local.entrySet().each {
+            if (it.key.startsWith('applovin.ad.')) {
+                mapBody += "put(\"${it.key}\", \"${it.value}\");\n"
             }
         }
 
@@ -47,6 +47,6 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'com.applovin:applovin-sdk:11.1.2'
+    implementation 'com.applovin:applovin-sdk:11.2.+'
     implementation project(':adapter')
 }

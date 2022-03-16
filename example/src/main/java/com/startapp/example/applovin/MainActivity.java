@@ -1,5 +1,7 @@
 package com.startapp.example.applovin;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -27,8 +29,6 @@ import com.applovin.mediation.nativeAds.MaxNativeAdLoader;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
 import com.applovin.sdk.AppLovinSdk;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-
 @SuppressWarnings("CodeBlock2Expr")
 public class MainActivity extends AppCompatActivity {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
@@ -43,9 +43,15 @@ public class MainActivity extends AppCompatActivity {
         if (initialized == null) {
             initialized = false;
 
+            if (BuildConfig.testDevices.size() > 0) {
+                AppLovinSdk.getInstance(getApplicationContext())
+                        .getSettings()
+                        .setTestDeviceAdvertisingIds(BuildConfig.testDevices);
+            }
+
             AppLovinSdk.getInstance(getApplicationContext())
                     .getSettings()
-                    .setTestDeviceAdvertisingIds(BuildConfig.testDevices);
+                    .setVerboseLogging(false);
 
             AppLovinSdk.getInstance(getApplicationContext())
                     .setMediationProvider("max");
@@ -229,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String adUnitId = BuildConfig.adUnits.get("applovin.ad.native");
+
         if (adUnitId == null || adUnitId.isEmpty()) {
             Toast.makeText(getApplicationContext(), "Ad unit ID not found, see logs for details", Toast.LENGTH_SHORT).show();
 
@@ -273,6 +280,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String adUnitId = BuildConfig.adUnits.get("applovin.ad.interstitial");
+
         if (adUnitId == null || adUnitId.isEmpty()) {
             Toast.makeText(getApplicationContext(), "Ad unit ID not found, see logs for details", Toast.LENGTH_SHORT).show();
 
@@ -343,6 +351,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String adUnitId = BuildConfig.adUnits.get("applovin.ad.rewarded");
+
         if (adUnitId == null || adUnitId.isEmpty()) {
             Toast.makeText(getApplicationContext(), "Ad unit ID not found, see logs for details", Toast.LENGTH_SHORT).show();
 
