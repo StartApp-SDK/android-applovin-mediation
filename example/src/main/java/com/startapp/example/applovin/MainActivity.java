@@ -2,12 +2,14 @@ package com.startapp.example.applovin;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,6 +30,8 @@ import com.applovin.mediation.nativeAds.MaxNativeAdListener;
 import com.applovin.mediation.nativeAds.MaxNativeAdLoader;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
 import com.applovin.sdk.AppLovinSdk;
+
+import java.util.Map;
 
 @SuppressWarnings("CodeBlock2Expr")
 public class MainActivity extends AppCompatActivity {
@@ -82,6 +86,27 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.load_rewarded).setOnClickListener(view -> {
             onLoadRewardedClicked(view, findViewById(R.id.show_rewarded));
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        StringBuilder sb = null;
+
+        Map<String, ?> values = getPreferences(MODE_PRIVATE).getAll();
+        if (values != null) {
+            for (Map.Entry<String, ?> e : values.entrySet()) {
+                if (sb == null) {
+                    sb = new StringBuilder("Rewards:\n");
+                }
+
+                sb.append(e.getKey()).append(" = ").append(e.getValue()).append('\n');
+            }
+        }
+
+        TextView rewardsTextView = findViewById(R.id.rewards);
+        rewardsTextView.setText(sb);
     }
 
     private void onLoadBannerClicked(@NonNull View loadButton, @NonNull FrameLayout container) {
@@ -420,7 +445,16 @@ public class MainActivity extends AppCompatActivity {
             public void onUserRewarded(MaxAd ad, MaxReward reward) {
                 Log.v(LOG_TAG, "onUserRewarded: " + ad + ", reward: " + reward);
 
-                Toast.makeText(getApplicationContext(), "You've gained a reward!", Toast.LENGTH_SHORT).show();
+                SharedPreferences prefs = getPreferences(MODE_PRIVATE);
+
+                String key = reward.getLabel();
+                if (key == null || key.isEmpty()) {
+                    key = "<default>";
+                }
+
+                prefs.edit()
+                        .putInt(key, prefs.getInt(key, 0) + Math.max(reward.getAmount(), 1))
+                        .apply();
             }
         });
 
