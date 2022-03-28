@@ -30,6 +30,7 @@ import com.applovin.mediation.nativeAds.MaxNativeAdListener;
 import com.applovin.mediation.nativeAds.MaxNativeAdLoader;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
 import com.applovin.sdk.AppLovinSdk;
+import com.startapp.sdk.adsbase.StartAppSDK;
 
 import java.util.Map;
 
@@ -46,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (initialized == null) {
             initialized = false;
+
+            if (BuildConfig.DEBUG) {
+                StartAppSDK.setTestAdsEnabled(true);
+            }
 
             if (BuildConfig.testDevices.size() > 0) {
                 AppLovinSdk.getInstance(getApplicationContext())

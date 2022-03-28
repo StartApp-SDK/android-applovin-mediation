@@ -674,7 +674,6 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             if (initializedAppId == null) {
                 StartAppAd.disableSplash();
                 StartAppAd.disableAutoInterstitial();
-                StartAppSDK.setTestAdsEnabled(true);
                 StartAppSDK.init(context, appId, false);
                 initializedAppId = appId;
                 initializedAdUnit = parameters.getAdUnitId();

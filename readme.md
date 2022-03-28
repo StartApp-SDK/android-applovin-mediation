@@ -106,7 +106,15 @@ You should put comma-separated list of advertising IDs into `local.properties` i
 applovin.test.devices=
 ```
 
+## Testing
+
 **Important**: currently mediation doesn't work with test mode.
+
+You can force Start.io to display the test ad by adding the following line somewhere in your code:
+
+```java
+StartAppSDK.setTestAdsEnabled(true);
+```
 
  [1]: https://support.start.io/hc/en-us/articles/202766673
  [2]: https://support.start.io/hc/en-us/articles/202766743
