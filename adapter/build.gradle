@@ -21,6 +21,10 @@ android {
 }
 
 dependencies {
-    implementation 'com.applovin:applovin-sdk:11.2.+'
-    implementation 'com.startapp:inapp-sdk:4.9.+'
+    // noinspection GradleDependency
+    api 'com.applovin:applovin-sdk:[11.2,11.3)'
+    // noinspection GradleDependency
+    api 'com.startapp:inapp-sdk:[4.9,5)'
 }
+
+apply from: "$rootDir/publish-mavencentral.gradle"
