@@ -9,9 +9,14 @@ import static com.startapp.adapter.applovin.BuildConfig.VERSION_NAME;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -36,12 +41,19 @@ import com.applovin.mediation.adapter.parameters.MaxAdapterInitializationParamet
 import com.applovin.mediation.adapter.parameters.MaxAdapterParameters;
 import com.applovin.mediation.adapter.parameters.MaxAdapterResponseParameters;
 import com.applovin.mediation.adapter.parameters.MaxAdapterSignalCollectionParameters;
+import com.applovin.mediation.nativeAds.MaxNativeAd;
+import com.applovin.mediation.nativeAds.MaxNativeAdView;
 import com.applovin.sdk.AppLovinSdk;
 import com.startapp.sdk.ads.banner.Banner;
 import com.startapp.sdk.ads.banner.BannerBase;
 import com.startapp.sdk.ads.banner.BannerListener;
 import com.startapp.sdk.ads.banner.Mrec;
 import com.startapp.sdk.ads.banner.banner3d.Banner3D;
+import com.startapp.sdk.ads.nativead.NativeAdDetails;
+import com.startapp.sdk.ads.nativead.NativeAdDisplayListener;
+import com.startapp.sdk.ads.nativead.NativeAdInterface;
+import com.startapp.sdk.ads.nativead.NativeAdPreferences;
+import com.startapp.sdk.ads.nativead.StartAppNativeAd;
 import com.startapp.sdk.adsbase.Ad;
 import com.startapp.sdk.adsbase.StartAppAd;
 import com.startapp.sdk.adsbase.StartAppSDK;
@@ -50,7 +62,9 @@ import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
 import com.startapp.sdk.adsbase.adlisteners.VideoListener;
 import com.startapp.sdk.adsbase.model.AdPreferences;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -61,12 +75,19 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     private static final String APP_ID = "app_id";
     private static final String NETWORK_NAME = "network_name";
     private static final String IS_MUTED = "is_muted";
+    private static final String TEMPLATE = "template";
     private static final String AD_TAG = "adTag";
     private static final String INTERSTITIAL_MODE = "interstitialMode";
     private static final String MIN_CPM = "minCPM";
     private static final String IS_3D_BANNER = "is3DBanner";
     private static final String NATIVE_IMAGE_SIZE = "nativeImageSize";
     private static final String NATIVE_SECONDARY_IMAGE_SIZE = "nativeSecondaryImageSize";
+
+    private static final int IMAGE_SIZE_72X72 = 0;
+    private static final int IMAGE_SIZE_100X100 = 1;
+    private static final int IMAGE_SIZE_150X150 = 2;
+    private static final int IMAGE_SIZE_340X340 = 3;
+    private static final int IMAGE_SIZE_1200X628 = 4;
 
     @NonNull
     private static final Object lock = new Object();
@@ -626,12 +647,80 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     }
 
     @Override
-    public void loadNativeAd(MaxAdapterResponseParameters parameters, Activity activity, MaxNativeAdAdapterListener listener) {
+    public void loadNativeAd(MaxAdapterResponseParameters parameters, Activity activity, final MaxNativeAdAdapterListener listener) {
         if (DEBUG) {
             Log.v(LOG_TAG, "loadNativeAd");
         }
 
-        listener.onNativeAdLoadFailed(INTERNAL_ERROR);
+        if (listener == null) {
+            return;
+        }
+
+        if (parameters == null || activity == null) {
+            listener.onNativeAdLoadFailed(INTERNAL_ERROR);
+            return;
+        }
+
+        if (isInvalidAdapter(parameters)) {
+            if (DEBUG) {
+                Log.w(LOG_TAG, "loadNativeAd: invalid adapter: " + parameters.getServerParameters());
+            }
+
+            listener.onNativeAdLoadFailed(INTERNAL_ERROR);
+            return;
+        }
+
+        if (DEBUG) {
+            Log.v(LOG_TAG, "loadNativeAd: " + parameters.getAdUnitId());
+            Log.v(LOG_TAG, "loadNativeAd: " + parameters.getServerParameters());
+            Log.v(LOG_TAG, "loadNativeAd: " + parameters.getCustomParameters());
+        }
+
+        String adUnitId = parameters.getAdUnitId();
+        if (adUnitId == null || adUnitId.isEmpty()) {
+            listener.onNativeAdLoadFailed(INTERNAL_ERROR);
+            return;
+        }
+
+        if (!ensureInitialized(activity, parameters)) {
+            listener.onNativeAdLoadFailed(INTERNAL_ERROR);
+            return;
+        }
+
+        NativeAdPreferences adPreferences = createNativeAdPreferences(parameters);
+
+        final StartAppNativeAd nativeAd = new StartAppNativeAd(getApplicationContext());
+        nativeAd.loadAd(adPreferences, new AdEventListener() {
+            @Override
+            public void onReceiveAd(@NonNull Ad ad) {
+                if (DEBUG) {
+                    Log.v(LOG_TAG, "loadNativeAd: onReceiveAd: " + ad);
+                }
+
+                ArrayList<NativeAdDetails> nativeAdDetailsList = nativeAd.getNativeAds();
+                if (nativeAdDetailsList == null || nativeAdDetailsList.size() < 1) {
+                    listener.onNativeAdLoadFailed(NO_FILL);
+                    return;
+                }
+
+                NativeAdDetails nativeAdDetails = nativeAdDetailsList.get(0);
+                if (nativeAdDetails == null) {
+                    listener.onNativeAdLoadFailed(NO_FILL);
+                    return;
+                }
+
+                if (DEBUG) {
+                    Log.v(LOG_TAG, "loadNativeAd: onReceiveAd: notify listener");
+                }
+
+                listener.onNativeAdLoaded(new MaxStartAppNativeAd(getApplicationContext(), nativeAdDetails, listener), null);
+            }
+
+            @Override
+            public void onFailedToReceiveAd(@Nullable Ad ad) {
+                listener.onNativeAdLoadFailed(resolveError(ad));
+            }
+        });
     }
 
     @Override
@@ -672,6 +761,10 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         synchronized (StartAppMediationAdapter.class) {
             if (initializedAppId == null) {
+                if (parameters.isTesting()) {
+                    StartAppSDK.setTestAdsEnabled(true);
+                }
+
                 StartAppAd.disableSplash();
                 StartAppAd.disableAutoInterstitial();
                 StartAppSDK.init(context, appId, false);
@@ -694,9 +787,62 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     }
 
     @NonNull
+    private NativeAdPreferences createNativeAdPreferences(@NonNull MaxAdapterParameters parameters) {
+        NativeAdPreferences result = new NativeAdPreferences();
+        fillAdPreferences(parameters, result);
+
+        result.setAutoBitmapDownload(true);
+
+        Bundle customParameters = parameters.getServerParameters();
+        if (customParameters != null) {
+            String template = customParameters.getString(TEMPLATE);
+            if (template != null) {
+                if (template.startsWith("medium_")) {
+                    result.setSecondaryImageSize(IMAGE_SIZE_1200X628);
+                } else if (template.startsWith("small_")) {
+                    result.setSecondaryImageSize(IMAGE_SIZE_340X340);
+                }
+            }
+
+            String imageSize = customParameters.getString(NATIVE_IMAGE_SIZE);
+            if (imageSize != null) {
+                result.setPrimaryImageSize(imageSizeToInt(imageSize));
+            }
+
+            String secondaryImageSize = customParameters.getString(NATIVE_SECONDARY_IMAGE_SIZE);
+            if (secondaryImageSize != null) {
+                result.setSecondaryImageSize(imageSizeToInt(secondaryImageSize));
+            }
+        }
+
+        return result;
+    }
+
+    private static int imageSizeToInt(@NonNull String input) {
+        switch (input) {
+            case "72x72":
+                return IMAGE_SIZE_72X72;
+            case "100x100":
+                return IMAGE_SIZE_100X100;
+            case "150x150":
+                return IMAGE_SIZE_150X150;
+            case "340x340":
+                return IMAGE_SIZE_340X340;
+            case "1200x628":
+                return IMAGE_SIZE_1200X628;
+        }
+
+        return IMAGE_SIZE_150X150;
+    }
+
+    @NonNull
     private AdPreferences createAdPreferences(@NonNull MaxAdapterParameters parameters) {
         AdPreferences result = new AdPreferences();
+        fillAdPreferences(parameters, result);
+        return result;
+    }
 
+    private void fillAdPreferences(@NonNull MaxAdapterParameters parameters, @NonNull AdPreferences result) {
         Bundle serverParameters = parameters.getServerParameters();
         if (serverParameters != null) {
             if (serverParameters.getBoolean(IS_MUTED)) {
@@ -713,19 +859,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             if (customParameters.containsKey(MIN_CPM)) {
                 result.setMinCpm(customParameters.getDouble(MIN_CPM));
             }
-
-            if (customParameters.containsKey(NATIVE_IMAGE_SIZE)) {
-                // TODO size
-                // nativeImageSize = (Size) customParameters.getSerializable(NATIVE_IMAGE_SIZE);
-            }
-
-            if (customParameters.containsKey(NATIVE_SECONDARY_IMAGE_SIZE)) {
-                // TODO size
-                // nativeSecondaryImageSize = (Size) customParameters.getSerializable(NATIVE_SECONDARY_IMAGE_SIZE);
-            }
         }
-
-        return result;
     }
 
     @NonNull
@@ -753,5 +887,87 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         }
 
         return INTERNAL_ERROR;
+    }
+
+    static class MaxStartAppNativeAd extends MaxNativeAd {
+        @NonNull
+        final NativeAdDetails nativeAdDetails;
+
+        @NonNull
+        final MaxNativeAdAdapterListener listener;
+
+        @NonNull
+        static Builder createBuilder(@NonNull Context context, @NonNull NativeAdDetails nativeAdDetails) {
+            MaxNativeAd.Builder builder = new MaxNativeAd.Builder()
+                    .setAdFormat(MaxAdFormat.NATIVE)
+                    .setTitle(nativeAdDetails.getTitle())
+                    .setBody(nativeAdDetails.getDescription())
+                    .setCallToAction(nativeAdDetails.getCallToAction());
+
+            Bitmap imageBitmap = nativeAdDetails.getImageBitmap();
+            if (imageBitmap != null) {
+                builder.setIcon(new MaxNativeAdImage(new BitmapDrawable(context.getResources(), imageBitmap)));
+            }
+
+            Bitmap secondaryBitmap = nativeAdDetails.getSecondaryImageBitmap();
+            if (secondaryBitmap != null) {
+                ImageView imageView = new ImageView(context);
+                imageView.setImageDrawable(new BitmapDrawable(context.getResources(), secondaryBitmap));
+                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                builder.setMediaView(imageView);
+            }
+
+            return builder;
+        }
+
+        MaxStartAppNativeAd(@NonNull Context context, @NonNull NativeAdDetails nativeAdDetails, @NonNull MaxNativeAdAdapterListener listener) {
+            super(createBuilder(context, nativeAdDetails));
+
+            this.nativeAdDetails = nativeAdDetails;
+            this.listener = listener;
+        }
+
+        @Override
+        public void prepareViewForInteraction(@NonNull MaxNativeAdView maxNativeAdView) {
+            super.prepareViewForInteraction(maxNativeAdView);
+
+            List<View> clickableViews = new ArrayList<>(2);
+            clickableViews.add(maxNativeAdView);
+
+            findAllButtons(maxNativeAdView, clickableViews);
+
+            nativeAdDetails.registerViewForInteraction(maxNativeAdView, clickableViews, new NativeAdDisplayListener() {
+                @Override
+                public void adDisplayed(NativeAdInterface nativeAdInterface) {
+                    listener.onNativeAdDisplayed(null);
+                }
+
+                @Override
+                public void adClicked(NativeAdInterface nativeAdInterface) {
+                    listener.onNativeAdClicked();
+                }
+
+                @Override
+                public void adHidden(NativeAdInterface nativeAdInterface) {
+                    // none
+                }
+
+                @Override
+                public void adNotDisplayed(NativeAdInterface nativeAdInterface) {
+                    // none
+                }
+            });
+        }
+
+        private void findAllButtons(@NonNull ViewGroup parent, @NonNull List<View> clickableViews) {
+            for (int i = 0, n = parent.getChildCount(); i < n; ++i) {
+                View child = parent.getChildAt(i);
+                if (child instanceof Button) {
+                    clickableViews.add(child);
+                } else if (child instanceof ViewGroup) {
+                    findAllButtons((ViewGroup) child, clickableViews);
+                }
+            }
+        }
     }
 }

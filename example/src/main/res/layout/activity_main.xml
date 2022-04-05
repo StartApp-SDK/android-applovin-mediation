@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:gravity="center_horizontal"
         tools:ignore="HardcodedText,ButtonStyle,RtlCompat">
 
         <LinearLayout
@@ -55,13 +56,47 @@
             android:gravity="center_horizontal">
 
             <Button
-                android:id="@+id/load_native"
+                android:id="@+id/load_native_small"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:layout_marginEnd="12dp"
-                android:text="Load Native" />
+                android:text="Load Native Small" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:gravity="center_horizontal">
+
+            <Button
+                android:id="@+id/load_native_medium"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:text="Load Native Medium" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:gravity="center_horizontal">
+
+            <Button
+                android:id="@+id/load_native_manual"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:text="Load Native Manual" />
         </LinearLayout>
 
         <LinearLayout

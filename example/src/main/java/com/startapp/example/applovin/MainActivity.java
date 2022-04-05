@@ -29,6 +29,7 @@ import com.applovin.mediation.ads.MaxRewardedAd;
 import com.applovin.mediation.nativeAds.MaxNativeAdListener;
 import com.applovin.mediation.nativeAds.MaxNativeAdLoader;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
+import com.applovin.mediation.nativeAds.MaxNativeAdViewBinder;
 import com.applovin.sdk.AppLovinSdk;
 import com.startapp.sdk.adsbase.StartAppSDK;
 
@@ -80,8 +81,16 @@ public class MainActivity extends AppCompatActivity {
             onLoadMrecClicked(view, findViewById(R.id.container));
         });
 
-        findViewById(R.id.load_native).setOnClickListener(view -> {
-            onLoadNativeClicked(view, findViewById(R.id.container));
+        findViewById(R.id.load_native_small).setOnClickListener(view -> {
+            onLoadNativeClicked(view, findViewById(R.id.container), "small");
+        });
+
+        findViewById(R.id.load_native_medium).setOnClickListener(view -> {
+            onLoadNativeClicked(view, findViewById(R.id.container), "medium");
+        });
+
+        findViewById(R.id.load_native_manual).setOnClickListener(view -> {
+            onLoadNativeClicked(view, findViewById(R.id.container), "manual");
         });
 
         findViewById(R.id.load_interstitial).setOnClickListener(view -> {
@@ -259,17 +268,19 @@ public class MainActivity extends AppCompatActivity {
         adView.loadAd();
     }
 
-    private void onLoadNativeClicked(@NonNull View loadButton, @NonNull ViewGroup container) {
+    private void onLoadNativeClicked(@NonNull View loadButton, @NonNull ViewGroup container, @NonNull String type) {
         if (!Boolean.TRUE.equals(initialized)) {
             return;
         }
 
-        String adUnitId = BuildConfig.adUnits.get("applovin.ad.native");
+        String key = "applovin.ad.native." + type;
+
+        String adUnitId = BuildConfig.adUnits.get(key);
 
         if (adUnitId == null || adUnitId.isEmpty()) {
             Toast.makeText(getApplicationContext(), "Ad unit ID not found, see logs for details", Toast.LENGTH_SHORT).show();
 
-            Log.w(LOG_TAG, "local.properties does not define 'applovin.ad.native'");
+            Log.w(LOG_TAG, "local.properties does not define '" + key + "'");
             return;
         }
 
@@ -279,11 +290,14 @@ public class MainActivity extends AppCompatActivity {
         nativeAdLoader.setNativeAdListener(new MaxNativeAdListener() {
             @Override
             public void onNativeAdLoaded(MaxNativeAdView adView, MaxAd ad) {
-                Log.v(LOG_TAG, "onNativeAdLoaded: " + ad);
+                Log.v(LOG_TAG, "onNativeAdLoaded: " + adView + ", " + ad);
 
                 loadButton.setEnabled(true);
 
-                container.addView(adView);
+                if (adView != null) {
+                    container.removeAllViews();
+                    container.addView(adView, new FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT, Gravity.CENTER));
+                }
             }
 
             @Override
@@ -301,7 +315,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        nativeAdLoader.loadAd();
+        if ("manual".equals(type)) {
+            MaxNativeAdViewBinder binder = new MaxNativeAdViewBinder.Builder(R.layout.native_custom_ad_view)
+                    .setTitleTextViewId(R.id.title_text_view)
+                    .setBodyTextViewId(R.id.body_text_view)
+                    .setAdvertiserTextViewId(R.id.advertiser_textView)
+                    .setIconImageViewId(R.id.icon_image_view)
+                    .setMediaContentViewGroupId(R.id.media_view_container)
+                    .setOptionsContentViewGroupId(R.id.options_view)
+                    .setCallToActionButtonId(R.id.cta_button)
+                    .build();
+
+            nativeAdLoader.loadAd(new MaxNativeAdView(binder, this));
+        } else {
+            nativeAdLoader.loadAd();
+        }
     }
 
     private void onLoadInterstitialClicked(@NonNull View loadButton, @NonNull View showButton) {

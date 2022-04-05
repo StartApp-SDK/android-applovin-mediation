@@ -8,7 +8,7 @@ This library lets you serve ads to your apps from StartApp network via AppLovin 
 - Banner 300x250 (Medium Rectangle)
 - Interstitial
 - Rewarded Video
-- Native (coming soon)
+- Native
 
 ## Setup Start.io
 
@@ -66,7 +66,9 @@ You can pass plain JSON string into the field `Custom Parameters` for advanced c
     "adTag": "string",
     "interstitialMode": "string", // one of "overlay", "video", "offerwall"
     "minCPM": "number",
-    "is3DBanner": "boolean" // applicable only for banner 320x50
+    "is3DBanner": "boolean", // applicable only for banner 320x50
+    "nativeImageSize": "string", // one of "72x72", "100x100", "150x150", "340x340", "1200x628"
+    "nativeSecondaryImageSize": "string" // one of "72x72", "100x100", "150x150", "340x340", "1200x628"
 }
 ```
 
@@ -94,7 +96,9 @@ You should put an appropriate Ad Unit ID into `local.properties` in order to tes
 ```properties
 applovin.ad.banner=
 applovin.ad.mrec=
-applovin.ad.native=
+applovin.ad.native.small=
+applovin.ad.native.medium=
+applovin.ad.native.manual=
 applovin.ad.interstitial=
 applovin.ad.rewarded=
 applovin.test.devices=
