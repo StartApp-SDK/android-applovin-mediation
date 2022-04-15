@@ -7,8 +7,10 @@ import static com.applovin.mediation.adapter.MaxAdapterError.NO_FILL;
 import static com.startapp.adapter.applovin.BuildConfig.DEBUG;
 import static com.startapp.adapter.applovin.BuildConfig.VERSION_NAME;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
@@ -43,6 +45,7 @@ import com.applovin.mediation.adapter.parameters.MaxAdapterResponseParameters;
 import com.applovin.mediation.adapter.parameters.MaxAdapterSignalCollectionParameters;
 import com.applovin.mediation.nativeAds.MaxNativeAd;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
+import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.startapp.sdk.ads.banner.Banner;
 import com.startapp.sdk.ads.banner.BannerBase;
@@ -771,6 +774,8 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 initializedAppId = appId;
                 initializedAdUnit = parameters.getAdUnitId();
 
+                initPrivacyParams(context);
+
                 log(networkName + " initialized with app ID " + appId);
                 return true;
             } else if (appId.equals(initializedAppId)) {
@@ -784,6 +789,40 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 return false;
             }
         }
+    }
+
+    private void initPrivacyParams(@NonNull Context context) {
+        SharedPreferences.Editor extrasEditor = null;
+
+        if (AppLovinPrivacySettings.isUserConsentSet(context)) {
+            // noinspection ConstantConditions
+            extrasEditor = ensureExtrasEditor(context, extrasEditor);
+            extrasEditor.putBoolean("medPas", AppLovinPrivacySettings.hasUserConsent(context));
+        }
+
+        if (AppLovinPrivacySettings.isDoNotSellSet(context)) {
+            extrasEditor = ensureExtrasEditor(context, extrasEditor);
+            extrasEditor.putBoolean("medCCPA", AppLovinPrivacySettings.isDoNotSell(context));
+        }
+
+        if (AppLovinPrivacySettings.isAgeRestrictedUserSet(context)) {
+            extrasEditor = ensureExtrasEditor(context, extrasEditor);
+            extrasEditor.putBoolean("medAgeRestrict", AppLovinPrivacySettings.isAgeRestrictedUser(context));
+        }
+
+        if (extrasEditor != null) {
+            extrasEditor.apply();
+        }
+    }
+
+    @NonNull
+    @SuppressLint("CommitPrefEdits")
+    private static SharedPreferences.Editor ensureExtrasEditor(@NonNull Context context, @Nullable SharedPreferences.Editor editor) {
+        if (editor == null) {
+            editor = StartAppSDK.getExtras(context).edit();
+        }
+
+        return editor;
     }
 
     @NonNull

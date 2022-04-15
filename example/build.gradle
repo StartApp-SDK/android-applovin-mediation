@@ -46,7 +46,6 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'com.applovin:applovin-sdk:11.2.+'
+    implementation 'androidx.appcompat:appcompat:[1,1.5)'
     implementation project(':adapter')
 }
