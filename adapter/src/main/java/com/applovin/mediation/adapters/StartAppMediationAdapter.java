@@ -47,11 +47,11 @@ import com.applovin.mediation.nativeAds.MaxNativeAd;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
-import com.startapp.sdk.ads.banner.Banner;
 import com.startapp.sdk.ads.banner.BannerBase;
+import com.startapp.sdk.ads.banner.BannerCreator;
+import com.startapp.sdk.ads.banner.BannerFormat;
 import com.startapp.sdk.ads.banner.BannerListener;
-import com.startapp.sdk.ads.banner.Mrec;
-import com.startapp.sdk.ads.banner.banner3d.Banner3D;
+import com.startapp.sdk.ads.banner.BannerRequest;
 import com.startapp.sdk.ads.nativead.NativeAdDetails;
 import com.startapp.sdk.ads.nativead.NativeAdDisplayListener;
 import com.startapp.sdk.ads.nativead.NativeAdInterface;
@@ -112,14 +112,14 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         super(sdk);
 
         if (DEBUG) {
-            Log.v(LOG_TAG, "constructor");
+            Log.v(LOG_TAG, debugPrefix() + "constructor");
         }
     }
 
     @Override
     public void initialize(MaxAdapterInitializationParameters parameters, Activity activity, OnCompletionListener listener) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "initialize");
+            Log.v(LOG_TAG, debugPrefix() + "initialize");
         }
 
         if (listener == null) {
@@ -133,17 +133,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "initialize: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "initialize: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onCompletion(INITIALIZED_FAILURE, null);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "initialize: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "initialize: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "initialize: " + parameters.getCustomParameters());
         }
 
         listener.onCompletion(INITIALIZED_SUCCESS, null);
@@ -152,7 +146,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public String getSdkVersion() {
         if (DEBUG) {
-            Log.v(LOG_TAG, "getSdkVersion");
+            Log.v(LOG_TAG, debugPrefix() + "getSdkVersion");
         }
 
         return StartAppSDK.getVersion();
@@ -161,7 +155,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public String getAdapterVersion() {
         if (DEBUG) {
-            Log.v(LOG_TAG, "getAdapterVersion");
+            Log.v(LOG_TAG, debugPrefix() + "getAdapterVersion");
         }
 
         return VERSION_NAME;
@@ -170,7 +164,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public void onDestroy() {
         if (DEBUG) {
-            Log.v(LOG_TAG, "onDestroy");
+            Log.v(LOG_TAG, debugPrefix() + "onDestroy");
         }
     }
 
@@ -182,7 +176,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Nullable final MaxAdViewAdapterListener listener
     ) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "loadAdViewAd");
+            Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: " + (parameters != null ? parameters.getAdUnitId() : null));
         }
 
         if (listener == null) {
@@ -196,17 +190,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "loadAdViewAd: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "loadAdViewAd: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onAdViewAdLoadFailed(INTERNAL_ERROR);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "loadAdViewAd: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "loadAdViewAd: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "loadAdViewAd: " + parameters.getCustomParameters());
         }
 
         if (!ensureInitialized(activity, parameters)) {
@@ -215,73 +203,67 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         }
 
         final AdPreferences adPreferences = createAdPreferences(parameters);
-
         final Bundle customParameters = parameters.getCustomParameters();
+        final BannerFormat bannerFormat;
 
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                BannerListener bannerListener = new BannerListener() {
+        if (format == MaxAdFormat.BANNER) {
+            bannerFormat = BannerFormat.BANNER;
+        } else if (format == MaxAdFormat.MREC) {
+            bannerFormat = BannerFormat.MREC;
+        } else {
+            listener.onAdViewAdLoadFailed(INTERNAL_ERROR);
+            return;
+        }
+
+        new BannerRequest(getApplicationContext())
+                .setAdFormat(bannerFormat)
+                .setAdPreferences(adPreferences)
+                .load(new BannerRequest.Callback() {
                     @Override
-                    public void onReceiveAd(View view) {
+                    public void onFinished(@Nullable BannerCreator creator, @Nullable String error) {
                         if (DEBUG) {
-                            Log.v(LOG_TAG, "loadAdViewAd: onReceiveAd: " + Thread.currentThread());
+                            Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFinished: " + error);
                         }
 
-                        // listener.onAdViewAdLoaded(banner);
-                    }
+                        if (creator != null) {
+                            listener.onAdViewAdLoaded(creator.create(getApplicationContext(), new BannerListener() {
+                                @Override
+                                public void onReceiveAd(View view) {
+                                    if (DEBUG) {
+                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onReceiveAd");
+                                    }
+                                }
 
-                    @Override
-                    public void onFailedToReceiveAd(View view) {
-                        if (DEBUG) {
-                            Log.v(LOG_TAG, "loadAdViewAd: onFailedToReceiveAd");
+                                @Override
+                                public void onFailedToReceiveAd(View view) {
+                                    if (DEBUG) {
+                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFailedToReceiveAd");
+                                    }
+                                }
+
+                                @Override
+                                public void onImpression(View view) {
+                                    if (DEBUG) {
+                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onImpression");
+                                    }
+
+                                    listener.onAdViewAdDisplayed();
+                                }
+
+                                @Override
+                                public void onClick(View view) {
+                                    if (DEBUG) {
+                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onClick");
+                                    }
+
+                                    listener.onAdViewAdClicked();
+                                }
+                            }));
+                        } else {
+                            listener.onAdViewAdLoadFailed(resolveError(error));
                         }
-
-                        listener.onAdViewAdDisplayFailed(resolveError(view));
                     }
-
-                    @Override
-                    public void onImpression(View view) {
-                        // none
-                    }
-
-                    @Override
-                    public void onClick(View view) {
-                        listener.onAdViewAdClicked();
-                    }
-                };
-
-                final BannerBase banner;
-                final int width;
-                final int height;
-
-                if (format == MaxAdFormat.BANNER) {
-                    width = 320;
-                    height = 50;
-
-                    if (customParameters != null && customParameters.getBoolean(IS_3D_BANNER)) {
-                        banner = new Banner3D(activity, adPreferences, bannerListener);
-                    } else {
-                        banner = new Banner(activity, adPreferences, bannerListener);
-                    }
-                } else if (format == MaxAdFormat.MREC) {
-                    width = 300;
-                    height = 250;
-
-                    banner = new Mrec(activity, adPreferences, bannerListener);
-                } else {
-                    listener.onAdViewAdLoadFailed(INTERNAL_ERROR);
-                    return;
-                }
-
-                banner.loadAd(width, height);
-                listener.onAdViewAdLoaded(banner);
-
-                if (DEBUG) {
-                    Log.v(LOG_TAG, "loadAdViewAd: done");
-                }
-            }
-        });
+                });
     }
 
     @Override
@@ -291,7 +273,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Nullable final MaxInterstitialAdapterListener listener
     ) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "loadInterstitialAd");
+            Log.v(LOG_TAG, debugPrefix() + "loadInterstitialAd");
         }
 
         if (listener == null) {
@@ -305,17 +287,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "loadInterstitialAd: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "loadInterstitialAd: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onInterstitialAdLoadFailed(INTERNAL_ERROR);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "loadInterstitialAd: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "loadInterstitialAd: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "loadInterstitialAd: " + parameters.getCustomParameters());
         }
 
         String adUnitId = parameters.getAdUnitId();
@@ -388,7 +364,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Nullable final MaxInterstitialAdapterListener listener
     ) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "showInterstitialAd");
+            Log.v(LOG_TAG, debugPrefix() + "showInterstitialAd");
         }
 
         if (listener == null) {
@@ -402,17 +378,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "showInterstitialAd: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "showInterstitialAd: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onInterstitialAdDisplayFailed(INTERNAL_ERROR);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "showInterstitialAd: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "showInterstitialAd: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "showInterstitialAd: " + parameters.getCustomParameters());
         }
 
         String adUnitId = parameters.getAdUnitId();
@@ -469,7 +439,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Nullable final MaxRewardedAdapterListener listener
     ) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "loadRewardedAd");
+            Log.v(LOG_TAG, debugPrefix() + "loadRewardedAd");
         }
 
         if (listener == null) {
@@ -483,17 +453,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "loadRewardedAd: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "loadRewardedAd: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onRewardedAdLoadFailed(INTERNAL_ERROR);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "loadRewardedAd: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "loadRewardedAd: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "loadRewardedAd: " + parameters.getCustomParameters());
         }
 
         String adUnitId = parameters.getAdUnitId();
@@ -546,7 +510,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Nullable final MaxRewardedAdapterListener listener
     ) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "showRewardedAd");
+            Log.v(LOG_TAG, debugPrefix() + "showRewardedAd");
         }
 
         if (listener == null) {
@@ -560,17 +524,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "showRewardedAd: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "showRewardedAd: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onRewardedAdDisplayFailed(INTERNAL_ERROR);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "showRewardedAd: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "showRewardedAd: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "showRewardedAd: " + parameters.getCustomParameters());
         }
 
         String adUnitId = parameters.getAdUnitId();
@@ -601,7 +559,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Override
             public void onVideoCompleted() {
                 if (DEBUG) {
-                    Log.v(LOG_TAG, "showRewardedAd: onVideoCompleted");
+                    Log.v(LOG_TAG, debugPrefix() + "showRewardedAd: onVideoCompleted");
                 }
 
                 listener.onUserRewarded(MaxRewardImpl.createDefault());
@@ -634,7 +592,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public void loadRewardedInterstitialAd(MaxAdapterResponseParameters parameters, Activity activity, MaxRewardedInterstitialAdapterListener listener) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "loadRewardedInterstitialAd");
+            Log.v(LOG_TAG, debugPrefix() + "loadRewardedInterstitialAd");
         }
 
         listener.onRewardedInterstitialAdLoadFailed(INTERNAL_ERROR);
@@ -643,7 +601,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public void showRewardedInterstitialAd(MaxAdapterResponseParameters parameters, Activity activity, MaxRewardedInterstitialAdapterListener listener) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "showRewardedInterstitialAd");
+            Log.v(LOG_TAG, debugPrefix() + "showRewardedInterstitialAd");
         }
 
         listener.onRewardedInterstitialAdDisplayFailed(INTERNAL_ERROR);
@@ -652,7 +610,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public void loadNativeAd(MaxAdapterResponseParameters parameters, Activity activity, final MaxNativeAdAdapterListener listener) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "loadNativeAd");
+            Log.v(LOG_TAG, debugPrefix() + "loadNativeAd");
         }
 
         if (listener == null) {
@@ -666,17 +624,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         if (isInvalidAdapter(parameters)) {
             if (DEBUG) {
-                Log.w(LOG_TAG, "loadNativeAd: invalid adapter: " + parameters.getServerParameters());
+                Log.w(LOG_TAG, debugPrefix() + "loadNativeAd: invalid adapter: " + parameters.getServerParameters());
             }
 
             listener.onNativeAdLoadFailed(INTERNAL_ERROR);
             return;
-        }
-
-        if (DEBUG) {
-            Log.v(LOG_TAG, "loadNativeAd: " + parameters.getAdUnitId());
-            Log.v(LOG_TAG, "loadNativeAd: " + parameters.getServerParameters());
-            Log.v(LOG_TAG, "loadNativeAd: " + parameters.getCustomParameters());
         }
 
         String adUnitId = parameters.getAdUnitId();
@@ -697,7 +649,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             @Override
             public void onReceiveAd(@NonNull Ad ad) {
                 if (DEBUG) {
-                    Log.v(LOG_TAG, "loadNativeAd: onReceiveAd: " + ad);
+                    Log.v(LOG_TAG, debugPrefix() + "loadNativeAd: onReceiveAd: " + ad);
                 }
 
                 ArrayList<NativeAdDetails> nativeAdDetailsList = nativeAd.getNativeAds();
@@ -713,7 +665,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 }
 
                 if (DEBUG) {
-                    Log.v(LOG_TAG, "loadNativeAd: onReceiveAd: notify listener");
+                    Log.v(LOG_TAG, debugPrefix() + "loadNativeAd: onReceiveAd: notify listener");
                 }
 
                 listener.onNativeAdLoaded(new MaxStartAppNativeAd(getApplicationContext(), nativeAdDetails, listener), null);
@@ -729,7 +681,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @Override
     public void collectSignal(MaxAdapterSignalCollectionParameters parameters, Activity activity, MaxSignalCollectionListener listener) {
         if (DEBUG) {
-            Log.v(LOG_TAG, "collectSignal");
+            Log.v(LOG_TAG, debugPrefix() + "collectSignal");
         }
 
         listener.onSignalCollectionFailed(null);
@@ -745,7 +697,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         Bundle serverParameters = parameters.getServerParameters();
         if (serverParameters == null) {
             if (DEBUG) {
-                Log.e(LOG_TAG, "ensureInitialized: no server parameters");
+                Log.e(LOG_TAG, debugPrefix() + "ensureInitialized: no server parameters");
             }
 
             return false;
@@ -754,7 +706,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         String appId = serverParameters.getString(APP_ID);
         if (appId == null || appId.isEmpty()) {
             if (DEBUG) {
-                Log.v(LOG_TAG, "ensureInitialized: no app ID");
+                Log.v(LOG_TAG, debugPrefix() + "ensureInitialized: no app ID");
             }
 
             return false;
@@ -1008,5 +960,14 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 }
             }
         }
+    }
+
+    @NonNull
+    private String debugPrefix() {
+        if (DEBUG) {
+            return "[" + Integer.toHexString(hashCode()) + "]: ";
+        }
+
+        return "";
     }
 }

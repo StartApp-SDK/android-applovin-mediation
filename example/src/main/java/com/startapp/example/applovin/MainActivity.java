@@ -71,6 +71,8 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        setTitle("AppLovin " + AppLovinSdk.VERSION + " - Start.io " + StartAppSDK.getVersion());
+
         setContentView(R.layout.activity_main);
 
         findViewById(R.id.load_banner).setOnClickListener(view -> {

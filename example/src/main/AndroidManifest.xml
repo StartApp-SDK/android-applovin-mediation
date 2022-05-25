@@ -3,6 +3,7 @@
     package="com.startapp.example.applovin">
 
     <application
+        android:name="androidx.multidex.MultiDexApplication"
         android:label="AppLovin - Start.io"
         android:theme="@style/Theme.AppCompat.Light">
 

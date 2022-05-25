@@ -79,7 +79,7 @@ Add dependency on Start.io mediation adapter for AppLovin MAX
 ```groovy
 dependencies {
     // noinspection GradleDependency
-    implementation 'com.startapp:applovin-mediation:1.+'
+    implementation 'com.startapp:applovin-mediation:1.1+'
 }
 ```
 

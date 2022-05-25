@@ -11,6 +11,7 @@ android {
         targetSdkVersion 32
         versionCode 1
         versionName '1.0'
+        multiDexEnabled true
     }
 
     defaultConfig {
@@ -47,5 +48,6 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:[1,1.5)'
+    implementation 'androidx.multidex:multidex:[2,3)'
     implementation project(':adapter')
 }
