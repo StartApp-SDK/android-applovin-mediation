@@ -779,8 +779,10 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     }
 
     @NonNull
-    private NativeAdPreferences createNativeAdPreferences(@NonNull MaxAdapterParameters parameters) {
+    private NativeAdPreferences createNativeAdPreferences(@NonNull MaxAdapterResponseParameters parameters) {
         NativeAdPreferences result = new NativeAdPreferences();
+        result.setAdTag(parameters.getThirdPartyAdPlacementId());
+
         fillAdPreferences(parameters, result);
 
         result.setAutoBitmapDownload(true);
@@ -828,8 +830,10 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     }
 
     @NonNull
-    private AdPreferences createAdPreferences(@NonNull MaxAdapterParameters parameters) {
+    private AdPreferences createAdPreferences(@NonNull MaxAdapterResponseParameters parameters) {
         AdPreferences result = new AdPreferences();
+        result.setAdTag(parameters.getThirdPartyAdPlacementId());
+
         fillAdPreferences(parameters, result);
         return result;
     }
