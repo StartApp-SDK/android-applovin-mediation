@@ -47,6 +47,7 @@ import com.applovin.mediation.nativeAds.MaxNativeAd;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
 import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
+import com.applovin.sdk.AppLovinSdkUtils.Size;
 import com.startapp.sdk.ads.banner.BannerBase;
 import com.startapp.sdk.ads.banner.BannerCreator;
 import com.startapp.sdk.ads.banner.BannerFormat;
@@ -215,8 +216,17 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
+        Map<String, Object> localExtras = parameters.getLocalExtraParameters();
+        boolean adaptive = localExtras != null && Boolean.parseBoolean(String.valueOf(localExtras.get("adaptive_banner")));
+        Size size = adaptive ? format.getAdaptiveSize(activity) : format.getSize();
+
+        if (DEBUG) {
+            Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: size: " + size.getWidth() + "x" + size.getHeight());
+        }
+
         new BannerRequest(getApplicationContext())
                 .setAdFormat(bannerFormat)
+                .setAdSize(size.getWidth(), size.getHeight())
                 .setAdPreferences(adPreferences)
                 .load(new BannerRequest.Callback() {
                     @Override
