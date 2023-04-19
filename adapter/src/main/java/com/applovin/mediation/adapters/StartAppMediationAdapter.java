@@ -866,6 +866,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 result.setMinCpm(customParameters.getDouble(MIN_CPM));
             }
         }
+
+        String adUnitId = parameters.getAdUnitId();
+        if (adUnitId != null && adUnitId.length() > 0) {
+            result.setPlacementId(adUnitId);
+        }
     }
 
     @NonNull
