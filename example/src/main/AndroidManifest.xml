@@ -5,6 +5,7 @@
     <application
         android:name="androidx.multidex.MultiDexApplication"
         android:label="AppLovin - Start.io"
+        android:networkSecurityConfig="@xml/nsc"
         android:theme="@style/Theme.AppCompat.Light">
 
         <meta-data
