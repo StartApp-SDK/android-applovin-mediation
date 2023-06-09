@@ -22,7 +22,7 @@ android {
 
 dependencies {
     api 'com.applovin:applovin-sdk:[11.2,11.5)'
-    api 'com.startapp:inapp-sdk:[4.10.11,5)'
+    api 'com.startapp:inapp-sdk:[4.11,5)'
 }
 
 apply from: "$rootDir/publish-mavencentral.gradle"

@@ -740,10 +740,8 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                     StartAppSDK.setTestAdsEnabled(true);
                 }
 
-                StartAppAd.disableSplash();
-                StartAppAd.disableAutoInterstitial();
                 StartAppSDK.init(context, appId, false);
-                StartAppSDK.addWrapper(context, "applovin", getAdapterVersion());
+                StartAppSDK.enableMediationMode(context, "applovin", getAdapterVersion());
                 initializedAppId = appId;
                 initializedAdUnit = parameters.getAdUnitId();
 
