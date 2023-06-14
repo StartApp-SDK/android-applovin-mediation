@@ -21,7 +21,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import androidx.annotation.Keep;
@@ -240,50 +242,66 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 .setAdPreferences(adPreferences)
                 .load(new BannerRequest.Callback() {
                     @Override
-                    public void onFinished(@Nullable BannerCreator creator, @Nullable String error) {
+                    public void onFinished(@Nullable final BannerCreator creator, @Nullable String error) {
                         if (DEBUG) {
                             Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFinished: " + error);
                         }
 
                         if (creator != null) {
-                            listener.onAdViewAdLoaded(creator.create(getApplicationContext(), new BannerListener() {
+                            final FrameLayout frameLayout = new FrameLayout(getApplicationContext());
+                            frameLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                                 @Override
-                                public void onReceiveAd(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onReceiveAd");
-                                    }
+                                public void onGlobalLayout() {
+                                    setupOnAdViewAdLoadedListener(listener, creator, frameLayout);
                                 }
-
-                                @Override
-                                public void onFailedToReceiveAd(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFailedToReceiveAd");
-                                    }
-                                }
-
-                                @Override
-                                public void onImpression(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onImpression");
-                                    }
-
-                                    listener.onAdViewAdDisplayed();
-                                }
-
-                                @Override
-                                public void onClick(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onClick");
-                                    }
-
-                                    listener.onAdViewAdClicked();
-                                }
-                            }));
+                            });
+                            listener.onAdViewAdLoaded(frameLayout);
                         } else {
                             listener.onAdViewAdLoadFailed(resolveError(error));
                         }
                     }
                 });
+    }
+
+    private void setupOnAdViewAdLoadedListener(final MaxAdViewAdapterListener listener,
+                                               BannerCreator creator,
+                                               FrameLayout outerLayout
+    ) {
+
+        View banner = creator.create(getApplicationContext(), new BannerListener() {
+            @Override
+            public void onReceiveAd(View view) {
+                if (DEBUG) {
+                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onReceiveAd");
+                }
+            }
+
+            @Override
+            public void onFailedToReceiveAd(View view) {
+                if (DEBUG) {
+                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFailedToReceiveAd");
+                }
+            }
+
+            @Override
+            public void onImpression(View view) {
+                if (DEBUG) {
+                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onImpression");
+                }
+
+                listener.onAdViewAdDisplayed();
+            }
+
+            @Override
+            public void onClick(View view) {
+                if (DEBUG) {
+                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onClick");
+                }
+
+                listener.onAdViewAdClicked();
+            }
+        });
+        outerLayout.addView(banner);
     }
 
     @Override
