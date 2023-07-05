@@ -252,7 +252,8 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                             frameLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                                 @Override
                                 public void onGlobalLayout() {
-                                    setupOnAdViewAdLoadedListener(listener, creator, frameLayout);
+                                    frameLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                    crateBanner(listener, creator, frameLayout);
                                 }
                             });
                             listener.onAdViewAdLoaded(frameLayout);
@@ -263,9 +264,9 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 });
     }
 
-    private void setupOnAdViewAdLoadedListener(final MaxAdViewAdapterListener listener,
-                                               BannerCreator creator,
-                                               FrameLayout outerLayout
+    private void crateBanner(final MaxAdViewAdapterListener listener,
+                             BannerCreator creator,
+                             FrameLayout outerLayout
     ) {
 
         View banner = creator.create(getApplicationContext(), new BannerListener() {
