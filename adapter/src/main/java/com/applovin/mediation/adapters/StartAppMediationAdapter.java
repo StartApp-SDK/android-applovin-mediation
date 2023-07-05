@@ -250,10 +250,23 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                         if (creator != null) {
                             final FrameLayout frameLayout = new FrameLayout(getApplicationContext());
                             frameLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                boolean called;
+
                                 @Override
                                 public void onGlobalLayout() {
+                                    if (called) {
+                                        return;
+                                    } else {
+                                        called = true;
+                                    }
+
                                     frameLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                                    crateBanner(listener, creator, frameLayout);
+                                    frameLayout.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            crateBanner(listener, creator, frameLayout);
+                                        }
+                                    });
                                 }
                             });
                             listener.onAdViewAdLoaded(frameLayout);
