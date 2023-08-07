@@ -742,6 +742,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
                 StartAppSDK.init(context, appId, false);
                 StartAppSDK.enableMediationMode(context, "applovin", getAdapterVersion());
+                StartAppAd.enableConsent(context, false);
                 initializedAppId = appId;
                 initializedAdUnit = parameters.getAdUnitId();
 
