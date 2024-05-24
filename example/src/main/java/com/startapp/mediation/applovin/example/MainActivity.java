@@ -4,6 +4,7 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,19 +39,21 @@ import com.startapp.sdk.adsbase.StartAppSDK;
 public class MainActivity extends AppCompatActivity {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
+    enum AdState {
+        IDLE,
+        LOADING,
+        VISIBLE,
+    }
+
     private static final MutableLiveData<Boolean> initialized = new MutableLiveData<>(null);
-    private final MutableLiveData<MaxInterstitialAd> interstitialLiveData = new MutableLiveData<>();
-    private final MutableLiveData<MaxRewardedAd> rewardedLiveData = new MutableLiveData<>();
-    private final MutableLiveData<MaxAdView> bannerLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> bannerVisible = new MutableLiveData<>(false);
-    private final MutableLiveData<MaxAdView> mrecLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> mrecVisible = new MutableLiveData<>(false);
-    private final MutableLiveData<MaxNativeAdView> nativeSmallLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> nativeSmallVisible = new MutableLiveData<>(false);
-    private final MutableLiveData<MaxNativeAdView> nativeMediumLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> nativeMediumVisible = new MutableLiveData<>(false);
-    private final MutableLiveData<MaxNativeAdView> nativeManualLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> nativeManualVisible = new MutableLiveData<>(false);
+
+    private final MutableLiveData<Pair<MaxInterstitialAd, AdState>> interstitialLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Pair<MaxRewardedAd, AdState>> rewardedLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Pair<MaxAdView, AdState>> bannerLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Pair<MaxAdView, AdState>> mrecLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Pair<MaxNativeAdView, AdState>> nativeSmallLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Pair<MaxNativeAdView, AdState>> nativeMediumLiveData = new MutableLiveData<>();
+    private final MutableLiveData<Pair<MaxNativeAdView, AdState>> nativeManualLiveData = new MutableLiveData<>();
 
     private ViewGroup bannerContainer;
     private ViewGroup mrecContainer;
@@ -113,69 +116,49 @@ public class MainActivity extends AppCompatActivity {
         showNativeManual.setOnClickListener(this::showNativeManual);
         hideNativeManual.setOnClickListener(this::hideNativeManual);
 
-        interstitialLiveData.observe(this, interstitialAd -> {
-            loadInterstitial.setEnabled(interstitialAd == null && isInitialized());
-            showInterstitial.setEnabled(interstitialAd != null);
+        interstitialLiveData.observe(this, pair -> {
+            loadInterstitial.setEnabled(isLoadButtonEnabled(pair));
+            showInterstitial.setEnabled(isShowButtonEnabled(pair));
         });
 
-        rewardedLiveData.observe(this, rewardedAd -> {
-            loadRewarded.setEnabled(rewardedAd == null && isInitialized());
-            showRewarded.setEnabled(rewardedAd != null);
+        rewardedLiveData.observe(this, pair -> {
+            loadRewarded.setEnabled(isLoadButtonEnabled(pair));
+            showRewarded.setEnabled(isShowButtonEnabled(pair));
         });
 
-        bannerLiveData.observe(this, adView -> {
-            loadBanner.setEnabled(adView == null && isInitialized());
-            showBanner.setEnabled(adView != null && !Boolean.TRUE.equals(bannerVisible.getValue()));
+        bannerLiveData.observe(this, pair -> {
+            loadBanner.setEnabled(isLoadButtonEnabled(pair));
+            showBanner.setEnabled(isShowButtonEnabled(pair));
+            hideBanner.setEnabled(isHideButtonVisible(pair));
+            bannerContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
         });
 
-        bannerVisible.observe(this, visible -> {
-            bannerContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
-            showBanner.setEnabled(bannerLiveData.getValue() != null && !visible);
-            hideBanner.setEnabled(visible);
+        mrecLiveData.observe(this, pair -> {
+            loadMrec.setEnabled(isLoadButtonEnabled(pair));
+            showMrec.setEnabled(isShowButtonEnabled(pair));
+            hideMrec.setEnabled(isHideButtonVisible(pair));
+            mrecContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
         });
 
-        mrecLiveData.observe(this, adView -> {
-            loadMrec.setEnabled(adView == null && isInitialized());
-            showMrec.setEnabled(adView != null && !Boolean.TRUE.equals(mrecVisible.getValue()));
+        nativeSmallLiveData.observe(this, pair -> {
+            loadNativeSmall.setEnabled(isLoadButtonEnabled(pair));
+            showNativeSmall.setEnabled(isShowButtonEnabled(pair));
+            hideNativeSmall.setEnabled(isHideButtonVisible(pair));
+            nativeSmallContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
         });
 
-        mrecVisible.observe(this, visible -> {
-            mrecContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
-            showMrec.setEnabled(mrecLiveData.getValue() != null && !visible);
-            hideMrec.setEnabled(visible);
+        nativeMediumLiveData.observe(this, pair -> {
+            loadNativeMedium.setEnabled(isLoadButtonEnabled(pair));
+            showNativeMedium.setEnabled(isShowButtonEnabled(pair));
+            hideNativeMedium.setEnabled(isHideButtonVisible(pair));
+            nativeMediumContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
         });
 
-        nativeSmallLiveData.observe(this, nativeAd -> {
-            loadNativeSmall.setEnabled(nativeAd == null && isInitialized());
-            showNativeSmall.setEnabled(nativeAd != null && !Boolean.TRUE.equals(nativeSmallVisible.getValue()));
-        });
-
-        nativeSmallVisible.observe(this, visible -> {
-            nativeSmallContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
-            showNativeSmall.setEnabled(nativeSmallLiveData.getValue() != null && !visible);
-            hideNativeSmall.setEnabled(visible);
-        });
-
-        nativeMediumLiveData.observe(this, nativeAd -> {
-            loadNativeMedium.setEnabled(nativeAd == null && isInitialized());
-            showNativeMedium.setEnabled(nativeAd != null && !Boolean.TRUE.equals(nativeMediumVisible.getValue()));
-        });
-
-        nativeMediumVisible.observe(this, visible -> {
-            nativeMediumContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
-            showNativeMedium.setEnabled(nativeMediumLiveData.getValue() != null && !visible);
-            hideNativeMedium.setEnabled(visible);
-        });
-
-        nativeManualLiveData.observe(this, nativeAd -> {
-            loadNativeManual.setEnabled(nativeAd == null && isInitialized());
-            showNativeManual.setEnabled(nativeAd != null && !Boolean.TRUE.equals(nativeManualVisible.getValue()));
-        });
-
-        nativeManualVisible.observe(this, visible -> {
-            nativeManualContainer.setVisibility(visible ? View.VISIBLE : View.GONE);
-            showNativeManual.setEnabled(nativeManualLiveData.getValue() != null && !visible);
-            hideNativeManual.setEnabled(visible);
+        nativeManualLiveData.observe(this, pair -> {
+            loadNativeManual.setEnabled(isLoadButtonEnabled(pair));
+            showNativeManual.setEnabled(isShowButtonEnabled(pair));
+            hideNativeManual.setEnabled(isHideButtonVisible(pair));
+            nativeManualContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
         });
 
         // endregion
@@ -210,6 +193,18 @@ public class MainActivity extends AppCompatActivity {
         return Boolean.TRUE.equals(initialized.getValue());
     }
 
+    private static <T> boolean isLoadButtonEnabled(@Nullable Pair<T, AdState> pair) {
+        return (pair == null || pair.first == null && pair.second != AdState.LOADING) && isInitialized();
+    }
+
+    private static <T> boolean isShowButtonEnabled(@Nullable Pair<T, AdState> pair) {
+        return pair != null && pair.first != null && pair.second != AdState.VISIBLE;
+    }
+
+    private static <T> boolean isHideButtonVisible(@Nullable Pair<T, AdState> pair) {
+        return pair != null && pair.second == AdState.VISIBLE;
+    }
+
     // region Banner & Mrec
 
     private void loadBanner(@NonNull View view) {
@@ -226,29 +221,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showBanner(@NonNull View view) {
-        showAdView(bannerLiveData, bannerVisible, bannerContainer);
+        showAdView(bannerLiveData, bannerContainer);
     }
 
     private void showMrec(@NonNull View view) {
-        showAdView(mrecLiveData, mrecVisible, mrecContainer);
+        showAdView(mrecLiveData, mrecContainer);
     }
 
     private void hideBanner(@NonNull View view) {
-        hideAdView(bannerLiveData, bannerVisible, bannerContainer);
+        hideAdView(bannerLiveData, bannerContainer);
     }
 
     private void hideMrec(@NonNull View view) {
-        hideAdView(mrecLiveData, mrecVisible, mrecContainer);
+        hideAdView(mrecLiveData, mrecContainer);
     }
 
-    private void loadAdView(@NonNull MaxAdFormat format, @StringRes int adUnitStringId, @NonNull ViewGroup.LayoutParams layoutParams, @NonNull MutableLiveData<MaxAdView> liveData) {
+    private void loadAdView(@NonNull MaxAdFormat format, @StringRes int adUnitStringId, @NonNull ViewGroup.LayoutParams layoutParams, @NonNull MutableLiveData<Pair<MaxAdView, AdState>> liveData) {
         MaxAdView adView = new MaxAdView(getString(adUnitStringId), format, this);
         adView.setListener(new MaxAdViewAdListener() {
             @Override
             public void onAdLoaded(@NonNull MaxAd ad) {
                 Log.v(LOG_TAG, "onAdLoaded: " + ad);
 
-                liveData.setValue(adView);
+                Pair<MaxAdView, AdState> pair = liveData.getValue();
+
+                if (pair == null || pair.second == AdState.LOADING) {
+                    liveData.setValue(new Pair<>(adView, AdState.IDLE));
+                }
             }
 
             @Override
@@ -289,27 +288,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        liveData.setValue(new Pair<>(null, AdState.LOADING));
+
         adView.setLayoutParams(layoutParams);
         adView.loadAd();
     }
 
-    private void showAdView(@NonNull MutableLiveData<MaxAdView> liveData, @NonNull MutableLiveData<Boolean> visible, @NonNull ViewGroup container) {
-        MaxAdView adView = liveData.getValue();
-        if (adView != null) {
+    private void showAdView(@NonNull MutableLiveData<Pair<MaxAdView, AdState>> liveData, @NonNull ViewGroup container) {
+        Pair<MaxAdView, AdState> pair = liveData.getValue();
+        if (pair != null && pair.first != null) {
             container.removeAllViews();
-            container.addView(adView);
-            visible.setValue(true);
+            container.addView(pair.first);
+            liveData.setValue(new Pair<>(pair.first, AdState.VISIBLE));
         } else {
             Toast.makeText(this, "AdView is not ready", Toast.LENGTH_SHORT).show();
-
-            visible.setValue(false);
         }
     }
 
-    private void hideAdView(@NonNull MutableLiveData<MaxAdView> liveData, @NonNull MutableLiveData<Boolean> visible, @NonNull ViewGroup container) {
+    private void hideAdView(@NonNull MutableLiveData<Pair<MaxAdView, AdState>> liveData, @NonNull ViewGroup container) {
         container.removeAllViews();
-        liveData.setValue(null);
-        visible.setValue(false);
+        liveData.setValue(new Pair<>(null, AdState.IDLE));
     }
 
     // endregion
@@ -329,37 +327,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showNativeSmall(@NonNull View view) {
-        showNative(nativeSmallLiveData, nativeSmallVisible, nativeSmallContainer);
+        showNative(nativeSmallLiveData, nativeSmallContainer);
     }
 
     private void showNativeMedium(@NonNull View view) {
-        showNative(nativeMediumLiveData, nativeMediumVisible, nativeMediumContainer);
+        showNative(nativeMediumLiveData, nativeMediumContainer);
     }
 
     private void showNativeManual(@NonNull View view) {
-        showNative(nativeManualLiveData, nativeManualVisible, nativeManualContainer);
+        showNative(nativeManualLiveData, nativeManualContainer);
     }
 
     private void hideNativeSmall(@NonNull View view) {
-        hideNative(nativeSmallLiveData, nativeSmallVisible, nativeSmallContainer);
+        hideNative(nativeSmallLiveData, nativeSmallContainer);
     }
 
     private void hideNativeMedium(@NonNull View view) {
-        hideNative(nativeMediumLiveData, nativeMediumVisible, nativeMediumContainer);
+        hideNative(nativeMediumLiveData, nativeMediumContainer);
     }
 
     private void hideNativeManual(@NonNull View view) {
-        hideNative(nativeManualLiveData, nativeManualVisible, nativeManualContainer);
+        hideNative(nativeManualLiveData, nativeManualContainer);
     }
 
-    private void loadNative(@NonNull MutableLiveData<MaxNativeAdView> liveData, @StringRes int adUnitStringId) {
+    private void loadNative(@NonNull MutableLiveData<Pair<MaxNativeAdView, AdState>> liveData, @StringRes int adUnitStringId) {
         MaxNativeAdLoader nativeAdLoader = new MaxNativeAdLoader(getString(adUnitStringId), this);
         nativeAdLoader.setNativeAdListener(new MaxNativeAdListener() {
             @Override
             public void onNativeAdLoaded(@Nullable MaxNativeAdView adView, @NonNull MaxAd ad) {
                 Log.v(LOG_TAG, "onNativeAdLoaded: " + adView + ", " + ad);
 
-                liveData.setValue(adView);
+                liveData.setValue(new Pair<>(adView, AdState.IDLE));
             }
 
             @Override
@@ -374,6 +372,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.v(LOG_TAG, "onNativeAdClicked: " + ad);
             }
         });
+
+        liveData.setValue(new Pair<>(null, AdState.LOADING));
 
         if (adUnitStringId == R.string.ad_unit_native_manual) {
             MaxNativeAdViewBinder binder = new MaxNativeAdViewBinder.Builder(R.layout.native_custom_ad_view)
@@ -392,24 +392,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void showNative(@NonNull MutableLiveData<MaxNativeAdView> liveData, @NonNull MutableLiveData<Boolean> visible, @NonNull ViewGroup container) {
-        MaxNativeAdView nativeView = liveData.getValue();
-        if (nativeView == null) {
+    private void showNative(@NonNull MutableLiveData<Pair<MaxNativeAdView, AdState>> liveData, @NonNull ViewGroup container) {
+        Pair<MaxNativeAdView, AdState> pair = liveData.getValue();
+        if (pair != null && pair.first != null) {
+            container.removeAllViews();
+            container.addView(pair.first);
+            liveData.setValue(new Pair<>(pair.first, AdState.VISIBLE));
+        } else {
             Toast.makeText(this, "Native is not ready", Toast.LENGTH_SHORT).show();
-
-            visible.setValue(false);
-            return;
+            liveData.setValue(null);
         }
-
-        container.removeAllViews();
-        container.addView(nativeView);
-        visible.setValue(true);
     }
 
-    private void hideNative(@NonNull MutableLiveData<MaxNativeAdView> liveData, @NonNull MutableLiveData<Boolean> visible, @NonNull ViewGroup container) {
+    private void hideNative(@NonNull MutableLiveData<Pair<MaxNativeAdView, AdState>> liveData, @NonNull ViewGroup container) {
         container.removeAllViews();
         liveData.setValue(null);
-        visible.setValue(false);
     }
 
     // endregion
@@ -423,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
             public void onAdLoaded(@NonNull MaxAd ad) {
                 Log.v(LOG_TAG, "onAdLoaded");
 
-                interstitialLiveData.setValue(interstitialAd);
+                interstitialLiveData.setValue(new Pair<>(interstitialAd, AdState.IDLE));
             }
 
             @Override
@@ -458,13 +455,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        interstitialLiveData.setValue(new Pair<>(null, AdState.LOADING));
         interstitialAd.loadAd();
     }
 
     public void showInterstitial(@NonNull View view) {
-        MaxInterstitialAd interstitialAd = interstitialLiveData.getValue();
-        if (interstitialAd != null) {
-            interstitialAd.showAd(this);
+        Pair<MaxInterstitialAd, AdState> pair = interstitialLiveData.getValue();
+        if (pair != null && pair.first != null) {
+            pair.first.showAd(this);
         } else {
             Toast.makeText(this, "Interstitial is not ready", Toast.LENGTH_SHORT).show();
         }
@@ -481,7 +479,7 @@ public class MainActivity extends AppCompatActivity {
             public void onAdLoaded(@NonNull MaxAd ad) {
                 Log.v(LOG_TAG, "onAdLoaded");
 
-                rewardedLiveData.setValue(rewardedAd);
+                rewardedLiveData.setValue(new Pair<>(rewardedAd, AdState.IDLE));
             }
 
             @Override
@@ -523,13 +521,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        rewardedLiveData.setValue(new Pair<>(null, AdState.LOADING));
         rewardedAd.loadAd();
     }
 
     public void showRewarded(@NonNull View view) {
-        MaxRewardedAd rewardedAd = rewardedLiveData.getValue();
-        if (rewardedAd != null) {
-            rewardedAd.showAd(this);
+        Pair<MaxRewardedAd, AdState> pair = rewardedLiveData.getValue();
+        if (pair != null && pair.first != null) {
+            pair.first.showAd(this);
         } else {
             Toast.makeText(this, "Rewarded is not ready", Toast.LENGTH_SHORT).show();
         }
