@@ -8,8 +8,8 @@ import static com.applovin.mediation.adapter.MaxAdapterError.INVALID_LOAD_STATE;
 import static com.applovin.mediation.adapter.MaxAdapterError.NO_FILL;
 import static com.applovin.mediation.adapter.MaxAdapterError.SERVER_ERROR;
 import static com.applovin.mediation.adapter.MaxAdapterError.UNSPECIFIED;
-import static com.startapp.adapter.applovin.BuildConfig.DEBUG;
-import static com.startapp.adapter.applovin.BuildConfig.VERSION_NAME;
+import static com.startapp.mediation.applovin.BuildConfig.DEBUG;
+import static com.startapp.mediation.applovin.BuildConfig.VERSION_NAME;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

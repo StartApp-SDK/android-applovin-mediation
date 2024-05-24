@@ -3,26 +3,27 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
+    namespace 'com.startapp.mediation.applovin'
+
+    compileSdk 34
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 33
+        minSdk 21
+        targetSdk 34
     }
 
     defaultConfig {
         buildConfigField 'String', 'VERSION_NAME', "\"$VERSION_NAME\""
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+    buildFeatures {
+        buildConfig true
     }
 }
 
 dependencies {
-    api 'com.applovin:applovin-sdk:[11.2,11.5)'
-    api 'com.startapp:inapp-sdk:[4.11,5)'
+    api 'com.applovin:applovin-sdk:[12.4,13)'
+    api 'com.startapp:inapp-sdk:[5,6)'
 }
 
 apply from: "$rootDir/publish-mavencentral.gradle"

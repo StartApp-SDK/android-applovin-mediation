@@ -3,51 +3,22 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
+    namespace 'com.startapp.mediation.applovin.example'
+
+    compileSdk 34
 
     defaultConfig {
         applicationId 'com.startapp.example.applovin'
-        minSdkVersion 16
-        targetSdkVersion 33
+        minSdk 21
+        targetSdk 34
         versionCode 1
         versionName '1.0'
         multiDexEnabled true
     }
-
-    defaultConfig {
-        def local = new Properties()
-        local.load(rootProject.file('local.properties').newDataInputStream())
-
-        def applovinSdkKey = local.get('applovin.sdk.key')
-        if (!(applovinSdkKey instanceof String) || applovinSdkKey.isEmpty()) {
-            throw new RuntimeException("local.properties does not define 'applovin.sdk.key'")
-        }
-
-        manifestPlaceholders = [
-                applovinSdkKey: applovinSdkKey
-        ]
-
-        def mapBody = '\n'
-        local.entrySet().each {
-            if (it.key.startsWith('applovin.ad.')) {
-                mapBody += "put(\"${it.key}\", \"${it.value}\");\n"
-            }
-        }
-
-        buildConfigField 'java.util.Map<String,String>', 'adUnits', "java.util.Collections.unmodifiableMap(new java.util.HashMap<String,String>(){{$mapBody}})"
-
-        def testDevices = local.get('applovin.test.devices')
-        if (testDevices instanceof String) {
-            def params = testDevices.split(',').collect { "\"$it\"" }.join(',\n')
-            buildConfigField 'java.util.List<String>', 'testDevices', "java.util.Arrays.asList($params)"
-        } else {
-            buildConfigField 'java.util.List<String>', 'testDevices', "java.util.Collections.emptyList()"
-        }
-    }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:[1,1.5)'
+    implementation 'androidx.appcompat:appcompat:[1,2)'
     implementation 'androidx.multidex:multidex:[2,3)'
     implementation project(':adapter')
 }
