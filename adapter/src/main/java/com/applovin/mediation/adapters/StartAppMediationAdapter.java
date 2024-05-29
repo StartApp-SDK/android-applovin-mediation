@@ -53,7 +53,6 @@ import com.applovin.sdk.AppLovinPrivacySettings;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkUtils.Size;
 import com.startapp.sdk.ads.banner.BannerBase;
-import com.startapp.sdk.ads.banner.BannerCreator;
 import com.startapp.sdk.ads.banner.BannerFormat;
 import com.startapp.sdk.ads.banner.BannerListener;
 import com.startapp.sdk.ads.banner.BannerRequest;
@@ -67,7 +66,6 @@ import com.startapp.sdk.adsbase.StartAppAd;
 import com.startapp.sdk.adsbase.StartAppSDK;
 import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener;
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
-import com.startapp.sdk.adsbase.adlisteners.VideoListener;
 import com.startapp.sdk.adsbase.model.AdPreferences;
 
 import java.util.ArrayList;
@@ -238,50 +236,47 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 .setAdFormat(bannerFormat)
                 .setAdSize(size.getWidth(), size.getHeight())
                 .setAdPreferences(adPreferences)
-                .load(new BannerRequest.Callback() {
-                    @Override
-                    public void onFinished(@Nullable BannerCreator creator, @Nullable String error) {
-                        if (DEBUG) {
-                            Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFinished: " + error);
-                        }
+                .load((creator, error) -> {
+                    if (DEBUG) {
+                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFinished: " + error);
+                    }
 
-                        if (creator != null) {
-                            listener.onAdViewAdLoaded(creator.create(getApplicationContext(), new BannerListener() {
-                                @Override
-                                public void onReceiveAd(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onReceiveAd");
-                                    }
+                    if (creator != null) {
+                        listener.onAdViewAdLoaded(creator.create(getApplicationContext(), new BannerListener() {
+                            @Override
+                            public void onReceiveAd(View view) {
+                                if (DEBUG) {
+                                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onReceiveAd");
+                                }
+                            }
+
+                            @Override
+                            public void onFailedToReceiveAd(View view) {
+                                if (DEBUG) {
+                                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFailedToReceiveAd");
+                                }
+                            }
+
+                            @Override
+                            public void onImpression(View view) {
+                                if (DEBUG) {
+                                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onImpression");
                                 }
 
-                                @Override
-                                public void onFailedToReceiveAd(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onFailedToReceiveAd");
-                                    }
+                                listener.onAdViewAdDisplayed();
+                            }
+
+                            @Override
+                            public void onClick(View view) {
+                                if (DEBUG) {
+                                    Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onClick");
                                 }
 
-                                @Override
-                                public void onImpression(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onImpression");
-                                    }
-
-                                    listener.onAdViewAdDisplayed();
-                                }
-
-                                @Override
-                                public void onClick(View view) {
-                                    if (DEBUG) {
-                                        Log.v(LOG_TAG, debugPrefix() + "loadAdViewAd: onClick");
-                                    }
-
-                                    listener.onAdViewAdClicked();
-                                }
-                            }));
-                        } else {
-                            listener.onAdViewAdLoadFailed(resolveError(error));
-                        }
+                                listener.onAdViewAdClicked();
+                            }
+                        }));
+                    } else {
+                        listener.onAdViewAdLoadFailed(resolveError(error));
                     }
                 });
     }
@@ -429,7 +424,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
-        ad.showAd(new AdDisplayListener() {
+        boolean shown = ad.showAd(new AdDisplayListener() {
             @Override
             public void adHidden(Ad ad) {
                 listener.onInterstitialAdHidden();
@@ -437,7 +432,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
             @Override
             public void adDisplayed(Ad ad) {
-                listener.onInterstitialAdDisplayed();
+                // none
             }
 
             @Override
@@ -450,6 +445,12 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 listener.onInterstitialAdDisplayFailed(resolveError(ad));
             }
         });
+
+        if (shown) {
+            listener.onInterstitialAdDisplayed();
+        } else {
+            listener.onInterstitialAdDisplayFailed(INTERNAL_ERROR);
+        }
     }
 
     @Override
@@ -575,18 +576,15 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
-        ad.setVideoListener(new VideoListener() {
-            @Override
-            public void onVideoCompleted() {
-                if (DEBUG) {
-                    Log.v(LOG_TAG, debugPrefix() + "showRewardedAd: onVideoCompleted");
-                }
-
-                listener.onUserRewarded(MaxRewardImpl.createDefault());
+        ad.setVideoListener(() -> {
+            if (DEBUG) {
+                Log.v(LOG_TAG, debugPrefix() + "showRewardedAd: onVideoCompleted");
             }
+
+            listener.onUserRewarded(MaxRewardImpl.createDefault());
         });
 
-        ad.showAd(new AdDisplayListener() {
+        boolean shown = ad.showAd(new AdDisplayListener() {
             @Override
             public void adHidden(Ad ad) {
                 listener.onRewardedAdHidden();
@@ -594,7 +592,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
             @Override
             public void adDisplayed(Ad ad) {
-                listener.onRewardedAdDisplayed();
+                // none
             }
 
             @Override
@@ -607,6 +605,12 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 listener.onRewardedAdDisplayFailed(resolveError(ad));
             }
         });
+
+        if (shown) {
+            listener.onRewardedAdDisplayed();
+        } else {
+            listener.onRewardedAdDisplayFailed(INTERNAL_ERROR);
+        }
     }
 
     @Override
