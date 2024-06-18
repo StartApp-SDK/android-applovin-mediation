@@ -143,7 +143,9 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
-        listener.onCompletion(INITIALIZED_SUCCESS, null);
+        if (!ensureInitialized(activity.getApplicationContext(), parameters, listener)) {
+            listener.onCompletion(INITIALIZED_FAILURE, null);
+        }
     }
 
     @Override
@@ -716,8 +718,29 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         return serverParameters == null || !StartAppMediationAdapter.class.getName().equals(serverParameters.getString("adapter_class"));
     }
 
+    @SuppressWarnings("RedundantIfStatement")
+    private static boolean isValidAdTag(@Nullable String adTag) {
+        if (adTag == null) {
+            return false;
+        }
+
+        if (adTag.trim().isEmpty()) {
+            return false;
+        }
+
+        if (adTag.equals("default")) {
+            return false;
+        }
+
+        return true;
+    }
+
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean ensureInitialized(@NonNull Context context, @NonNull MaxAdapterParameters parameters) {
+        return ensureInitialized(context, parameters, null);
+    }
+
+    private boolean ensureInitialized(@NonNull Context context, @NonNull MaxAdapterParameters parameters, @Nullable OnCompletionListener listener) {
         Bundle serverParameters = parameters.getServerParameters();
         if (serverParameters == null) {
             if (DEBUG) {
@@ -744,9 +767,16 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                     StartAppSDK.setTestAdsEnabled(true);
                 }
 
-                StartAppSDK.init(context, appId, false);
                 StartAppSDK.enableMediationMode(context, "applovin", getAdapterVersion());
-                StartAppAd.enableConsent(context, false);
+                StartAppSDK.initParams(context, appId)
+                        .setReturnAdsEnabled(false)
+                        .setCallback(() -> {
+                            if (listener != null) {
+                                listener.onCompletion(INITIALIZED_SUCCESS, null);
+                            }
+                        })
+                        .init();
+
                 initializedAppId = appId;
                 initializedAdUnit = parameters.getAdUnitId();
 
@@ -804,7 +834,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @NonNull
     private NativeAdPreferences createNativeAdPreferences(@NonNull MaxAdapterResponseParameters parameters) {
         NativeAdPreferences result = new NativeAdPreferences();
-        result.setAdTag(parameters.getThirdPartyAdPlacementId());
+
+        String thirdPartyAdPlacementId = parameters.getThirdPartyAdPlacementId();
+        if (isValidAdTag(thirdPartyAdPlacementId)) {
+            result.setAdTag(thirdPartyAdPlacementId);
+        }
 
         fillAdPreferences(parameters, result);
 
@@ -855,7 +889,11 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
     @NonNull
     private AdPreferences createAdPreferences(@NonNull MaxAdapterResponseParameters parameters) {
         AdPreferences result = new AdPreferences();
-        result.setAdTag(parameters.getThirdPartyAdPlacementId());
+
+        String thirdPartyAdPlacementId = parameters.getThirdPartyAdPlacementId();
+        if (isValidAdTag(thirdPartyAdPlacementId)) {
+            result.setAdTag(thirdPartyAdPlacementId);
+        }
 
         fillAdPreferences(parameters, result);
         return result;
@@ -871,8 +909,9 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
 
         Bundle customParameters = parameters.getCustomParameters();
         if (customParameters != null) {
-            if (customParameters.containsKey(AD_TAG)) {
-                result.setAdTag(customParameters.getString(AD_TAG));
+            String adTag = customParameters.getString(AD_TAG);
+            if (isValidAdTag(adTag)) {
+                result.setAdTag(adTag);
             }
 
             if (customParameters.containsKey(MIN_CPM)) {
