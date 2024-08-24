@@ -426,6 +426,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
+        ad.setContext(activity);
         boolean shown = ad.showAd(new AdDisplayListener() {
             @Override
             public void adHidden(Ad ad) {
@@ -586,6 +587,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             listener.onUserRewarded(MaxRewardImpl.createDefault());
         });
 
+        ad.setContext(activity);
         boolean shown = ad.showAd(new AdDisplayListener() {
             @Override
             public void adHidden(Ad ad) {
