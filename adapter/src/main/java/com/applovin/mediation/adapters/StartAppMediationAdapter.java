@@ -68,6 +68,7 @@ import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener;
 import com.startapp.sdk.adsbase.adlisteners.AdEventListener;
 import com.startapp.sdk.adsbase.model.AdPreferences;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -426,7 +427,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
-        ad.setContext(activity);
+        trySetContext(activity, ad);
         boolean shown = ad.showAd(new AdDisplayListener() {
             @Override
             public void adHidden(Ad ad) {
@@ -587,7 +588,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             listener.onUserRewarded(MaxRewardImpl.createDefault());
         });
 
-        ad.setContext(activity);
+        trySetContext(activity, ad);
         boolean shown = ad.showAd(new AdDisplayListener() {
             @Override
             public void adHidden(Ad ad) {
@@ -1037,6 +1038,17 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                     findAllButtons((ViewGroup) child, clickableViews);
                 }
             }
+        }
+    }
+
+    private static void trySetContext(@NonNull Context context, @NonNull StartAppAd ad) {
+        try {
+            // context is an Activity, it is used in GAM
+            Method method = StartAppAd.class.getDeclaredMethod("setContext", Context.class);
+            method.setAccessible(true);
+            method.invoke(ad, context);
+        } catch (Throwable e) {
+            // do nothing
         }
     }
 
