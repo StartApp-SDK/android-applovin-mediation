@@ -22,7 +22,7 @@ android {
 }
 
 dependencies {
-    api 'com.applovin:applovin-sdk:[12.4,13)'
+    api 'com.applovin:applovin-sdk:[13,14)'
     api 'com.startapp:inapp-sdk:[5.0.1,6)'
 }
 

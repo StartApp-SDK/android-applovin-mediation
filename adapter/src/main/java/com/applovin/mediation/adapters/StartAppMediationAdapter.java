@@ -819,11 +819,6 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             extrasEditor.putBoolean("medCCPA", AppLovinPrivacySettings.isDoNotSell(context));
         }
 
-        if (AppLovinPrivacySettings.isAgeRestrictedUserSet(context)) {
-            extrasEditor = ensureExtrasEditor(context, extrasEditor);
-            extrasEditor.putBoolean("medAgeRestrict", AppLovinPrivacySettings.isAgeRestrictedUser(context));
-        }
-
         if (extrasEditor != null) {
             extrasEditor.apply();
         }
