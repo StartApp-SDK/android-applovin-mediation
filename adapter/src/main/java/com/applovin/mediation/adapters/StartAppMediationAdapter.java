@@ -215,7 +215,6 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         }
 
         final AdPreferences adPreferences = createAdPreferences(parameters);
-        final Bundle customParameters = parameters.getCustomParameters();
         final BannerFormat bannerFormat;
 
         if (format == MaxAdFormat.BANNER) {
@@ -323,19 +322,21 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
+        AdPreferences preferences = createAdPreferences(parameters);
+        String cacheKey = generateKey(adUnitId, preferences.getAdTag());
         StartAppAd ad = null;
 
         synchronized (lock) {
             if (interstitials == null) {
                 interstitials = new HashMap<>();
             } else {
-                ad = interstitials.get(adUnitId);
+                ad = interstitials.get(cacheKey);
             }
 
             if (ad == null) {
                 ad = new StartAppAd(activity.getApplicationContext());
 
-                interstitials.put(adUnitId, ad);
+                interstitials.put(cacheKey, ad);
             }
         }
 
@@ -362,7 +363,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             }
         }
 
-        ad.loadAd(adMode, createAdPreferences(parameters), new AdEventListener() {
+        ad.loadAd(adMode, preferences, new AdEventListener() {
             @Override
             public void onReceiveAd(@NonNull Ad ad) {
                 listener.onInterstitialAdLoaded();
@@ -414,11 +415,13 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
+        AdPreferences preferences = createAdPreferences(parameters);
+        String cacheKey = generateKey(adUnitId, preferences.getAdTag());
         StartAppAd ad = null;
 
         synchronized (lock) {
             if (interstitials != null) {
-                ad = interstitials.remove(adUnitId);
+                ad = interstitials.remove(cacheKey);
             }
         }
 
@@ -496,24 +499,24 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
+        AdPreferences adPreferences = createAdPreferences(parameters);
+        adPreferences.setType(Ad.AdType.REWARDED_VIDEO);
+        String cacheKey = generateKey(adUnitId, adPreferences.getAdTag());
         StartAppAd ad = null;
 
         synchronized (lock) {
             if (rewardedVideos == null) {
                 rewardedVideos = new HashMap<>();
             } else {
-                ad = rewardedVideos.get(adUnitId);
+                ad = rewardedVideos.get(cacheKey);
             }
 
             if (ad == null) {
                 ad = new StartAppAd(activity.getApplicationContext());
 
-                rewardedVideos.put(adUnitId, ad);
+                rewardedVideos.put(cacheKey, ad);
             }
         }
-
-        AdPreferences adPreferences = createAdPreferences(parameters);
-        adPreferences.setType(Ad.AdType.REWARDED_VIDEO);
 
         ad.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, adPreferences, new AdEventListener() {
             @Override
@@ -567,11 +570,13 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
             return;
         }
 
+        AdPreferences adPreferences = createAdPreferences(parameters);
+        String cacheKey = generateKey(adUnitId, adPreferences.getAdTag());
         StartAppAd ad = null;
 
         synchronized (lock) {
             if (rewardedVideos != null) {
-                ad = rewardedVideos.remove(adUnitId);
+                ad = rewardedVideos.remove(cacheKey);
             }
         }
 
@@ -682,7 +687,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
                 }
 
                 ArrayList<NativeAdDetails> nativeAdDetailsList = nativeAd.getNativeAds();
-                if (nativeAdDetailsList == null || nativeAdDetailsList.size() < 1) {
+                if (nativeAdDetailsList == null || nativeAdDetailsList.isEmpty()) {
                     listener.onNativeAdLoadFailed(NO_FILL);
                     return;
                 }
@@ -923,7 +928,7 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         }
 
         String adUnitId = parameters.getAdUnitId();
-        if (adUnitId != null && adUnitId.length() > 0) {
+        if (adUnitId != null && !adUnitId.isEmpty()) {
             result.setPlacementId(adUnitId);
         }
     }
@@ -1059,5 +1064,13 @@ public class StartAppMediationAdapter extends MediationAdapterBase implements Ma
         }
 
         return "";
+    }
+
+    @NonNull
+    private static String generateKey(@NonNull String adUnitId, @Nullable String adTag) {
+        if (adTag == null || adTag.isEmpty()) {
+            return adUnitId;
+        }
+        return String.format("%s-%s", adUnitId, adTag);
     }
 }
