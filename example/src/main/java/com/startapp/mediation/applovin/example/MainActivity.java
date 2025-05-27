@@ -30,7 +30,6 @@ import com.applovin.mediation.ads.MaxRewardedAd;
 import com.applovin.mediation.nativeAds.MaxNativeAdListener;
 import com.applovin.mediation.nativeAds.MaxNativeAdLoader;
 import com.applovin.mediation.nativeAds.MaxNativeAdView;
-import com.applovin.mediation.nativeAds.MaxNativeAdViewBinder;
 import com.applovin.sdk.AppLovinMediationProvider;
 import com.applovin.sdk.AppLovinSdk;
 import com.applovin.sdk.AppLovinSdkInitializationConfiguration;
@@ -51,14 +50,10 @@ public class MainActivity extends AppCompatActivity {
     private final MutableLiveData<Pair<MaxRewardedAd, AdState>> rewardedLiveData = new MutableLiveData<>();
     private final MutableLiveData<Pair<MaxAdView, AdState>> bannerLiveData = new MutableLiveData<>();
     private final MutableLiveData<Pair<MaxAdView, AdState>> mrecLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Pair<MaxNativeAdView, AdState>> nativeSmallLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Pair<MaxNativeAdView, AdState>> nativeMediumLiveData = new MutableLiveData<>();
     private final MutableLiveData<Pair<MaxNativeAdView, AdState>> nativeManualLiveData = new MutableLiveData<>();
 
     private ViewGroup bannerContainer;
     private ViewGroup mrecContainer;
-    private ViewGroup nativeSmallContainer;
-    private ViewGroup nativeMediumContainer;
     private ViewGroup nativeManualContainer;
 
     @Override
@@ -81,19 +76,11 @@ public class MainActivity extends AppCompatActivity {
         View loadMrec = findViewById(R.id.load_mrec);
         View showMrec = findViewById(R.id.show_mrec);
         View hideMrec = findViewById(R.id.hide_mrec);
-        View loadNativeSmall = findViewById(R.id.load_native_small);
-        View showNativeSmall = findViewById(R.id.show_native_small);
-        View hideNativeSmall = findViewById(R.id.hide_native_small);
-        View loadNativeMedium = findViewById(R.id.load_native_medium);
-        View showNativeMedium = findViewById(R.id.show_native_medium);
-        View hideNativeMedium = findViewById(R.id.hide_native_medium);
         View loadNativeManual = findViewById(R.id.load_native_manual);
         View showNativeManual = findViewById(R.id.show_native_manual);
         View hideNativeManual = findViewById(R.id.hide_native_manual);
         bannerContainer = findViewById(R.id.banner_container);
         mrecContainer = findViewById(R.id.mrec_container);
-        nativeSmallContainer = findViewById(R.id.native_small_container);
-        nativeMediumContainer = findViewById(R.id.native_medium_container);
         nativeManualContainer = findViewById(R.id.native_manual_container);
 
         loadInterstitial.setOnClickListener(this::loadInterstitial);
@@ -106,12 +93,6 @@ public class MainActivity extends AppCompatActivity {
         loadMrec.setOnClickListener(this::loadMrec);
         showMrec.setOnClickListener(this::showMrec);
         hideMrec.setOnClickListener(this::hideMrec);
-        loadNativeSmall.setOnClickListener(this::loadNativeSmall);
-        showNativeSmall.setOnClickListener(this::showNativeSmall);
-        hideNativeSmall.setOnClickListener(this::hideNativeSmall);
-        loadNativeMedium.setOnClickListener(this::loadNativeMedium);
-        showNativeMedium.setOnClickListener(this::showNativeMedium);
-        hideNativeMedium.setOnClickListener(this::hideNativeMedium);
         loadNativeManual.setOnClickListener(this::loadNativeManual);
         showNativeManual.setOnClickListener(this::showNativeManual);
         hideNativeManual.setOnClickListener(this::hideNativeManual);
@@ -140,20 +121,6 @@ public class MainActivity extends AppCompatActivity {
             mrecContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
         });
 
-        nativeSmallLiveData.observe(this, pair -> {
-            loadNativeSmall.setEnabled(isLoadButtonEnabled(pair));
-            showNativeSmall.setEnabled(isShowButtonEnabled(pair));
-            hideNativeSmall.setEnabled(isHideButtonVisible(pair));
-            nativeSmallContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
-        });
-
-        nativeMediumLiveData.observe(this, pair -> {
-            loadNativeMedium.setEnabled(isLoadButtonEnabled(pair));
-            showNativeMedium.setEnabled(isShowButtonEnabled(pair));
-            hideNativeMedium.setEnabled(isHideButtonVisible(pair));
-            nativeMediumContainer.setVisibility(isHideButtonVisible(pair) ? View.VISIBLE : View.GONE);
-        });
-
         nativeManualLiveData.observe(this, pair -> {
             loadNativeManual.setEnabled(isLoadButtonEnabled(pair));
             showNativeManual.setEnabled(isShowButtonEnabled(pair));
@@ -167,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
             if (value == null) {
                 initialized.setValue(false);
 
-                AppLovinSdkInitializationConfiguration configuration = AppLovinSdkInitializationConfiguration.builder(getString(R.string.sdk_key), this)
+                AppLovinSdkInitializationConfiguration configuration = AppLovinSdkInitializationConfiguration.builder(getString(R.string.sdk_key))
                         .setMediationProvider(AppLovinMediationProvider.MAX)
                         .build();
 
@@ -182,8 +149,6 @@ public class MainActivity extends AppCompatActivity {
                 rewardedLiveData.setValue(null);
                 bannerLiveData.setValue(null);
                 mrecLiveData.setValue(null);
-                nativeSmallLiveData.setValue(null);
-                nativeMediumLiveData.setValue(null);
                 nativeManualLiveData.setValue(null);
             }
         });
@@ -237,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadAdView(@NonNull MaxAdFormat format, @StringRes int adUnitStringId, @NonNull ViewGroup.LayoutParams layoutParams, @NonNull MutableLiveData<Pair<MaxAdView, AdState>> liveData) {
-        MaxAdView adView = new MaxAdView(getString(adUnitStringId), format, this);
+        MaxAdView adView = new MaxAdView(getString(adUnitStringId), format);
         adView.setListener(new MaxAdViewAdListener() {
             @Override
             public void onAdLoaded(@NonNull MaxAd ad) {
@@ -314,36 +279,12 @@ public class MainActivity extends AppCompatActivity {
 
     // region Native
 
-    private void loadNativeSmall(@NonNull View view) {
-        loadNative(nativeSmallLiveData, R.string.ad_unit_native_small);
-    }
-
-    private void loadNativeMedium(@NonNull View view) {
-        loadNative(nativeMediumLiveData, R.string.ad_unit_native_small);
-    }
-
     private void loadNativeManual(@NonNull View view) {
         loadNative(nativeManualLiveData, R.string.ad_unit_native_manual);
     }
 
-    private void showNativeSmall(@NonNull View view) {
-        showNative(nativeSmallLiveData, nativeSmallContainer);
-    }
-
-    private void showNativeMedium(@NonNull View view) {
-        showNative(nativeMediumLiveData, nativeMediumContainer);
-    }
-
     private void showNativeManual(@NonNull View view) {
         showNative(nativeManualLiveData, nativeManualContainer);
-    }
-
-    private void hideNativeSmall(@NonNull View view) {
-        hideNative(nativeSmallLiveData, nativeSmallContainer);
-    }
-
-    private void hideNativeMedium(@NonNull View view) {
-        hideNative(nativeMediumLiveData, nativeMediumContainer);
     }
 
     private void hideNativeManual(@NonNull View view) {
@@ -351,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadNative(@NonNull MutableLiveData<Pair<MaxNativeAdView, AdState>> liveData, @StringRes int adUnitStringId) {
-        MaxNativeAdLoader nativeAdLoader = new MaxNativeAdLoader(getString(adUnitStringId), this);
+        MaxNativeAdLoader nativeAdLoader = new MaxNativeAdLoader(getString(adUnitStringId));
         nativeAdLoader.setNativeAdListener(new MaxNativeAdListener() {
             @Override
             public void onNativeAdLoaded(@Nullable MaxNativeAdView adView, @NonNull MaxAd ad) {
@@ -375,21 +316,7 @@ public class MainActivity extends AppCompatActivity {
 
         liveData.setValue(new Pair<>(null, AdState.LOADING));
 
-        if (adUnitStringId == R.string.ad_unit_native_manual) {
-            MaxNativeAdViewBinder binder = new MaxNativeAdViewBinder.Builder(R.layout.native_custom_ad_view)
-                    .setTitleTextViewId(R.id.title_text_view)
-                    .setBodyTextViewId(R.id.body_text_view)
-                    .setAdvertiserTextViewId(R.id.advertiser_textView)
-                    .setIconImageViewId(R.id.icon_image_view)
-                    .setMediaContentViewGroupId(R.id.media_view_container)
-                    .setOptionsContentViewGroupId(R.id.ad_options_view)
-                    .setCallToActionButtonId(R.id.cta_button)
-                    .build();
-
-            nativeAdLoader.loadAd(new MaxNativeAdView(binder, this));
-        } else {
-            nativeAdLoader.loadAd();
-        }
+        nativeAdLoader.loadAd();
     }
 
     private void showNative(@NonNull MutableLiveData<Pair<MaxNativeAdView, AdState>> liveData, @NonNull ViewGroup container) {
@@ -414,7 +341,7 @@ public class MainActivity extends AppCompatActivity {
     // region Interstitial
 
     private void loadInterstitial(@NonNull View view) {
-        MaxInterstitialAd interstitialAd = new MaxInterstitialAd(getString(R.string.ad_unit_interstitial), this);
+        MaxInterstitialAd interstitialAd = new MaxInterstitialAd(getString(R.string.ad_unit_interstitial));
         interstitialAd.setListener(new MaxAdListener() {
             @Override
             public void onAdLoaded(@NonNull MaxAd ad) {
@@ -473,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
     // region Rewarded
 
     private void loadRewarded(@NonNull View view) {
-        MaxRewardedAd rewardedAd = MaxRewardedAd.getInstance(getString(R.string.ad_unit_rewarded), this);
+        MaxRewardedAd rewardedAd = MaxRewardedAd.getInstance(getString(R.string.ad_unit_rewarded));
         rewardedAd.setListener(new MaxRewardedAdListener() {
             @Override
             public void onAdLoaded(@NonNull MaxAd ad) {

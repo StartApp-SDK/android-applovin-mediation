@@ -5,15 +5,15 @@ plugins {
 android {
     namespace 'com.startapp.mediation.applovin'
 
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         minSdk 21
-        targetSdk 34
+        targetSdk 36
     }
 
     defaultConfig {
-        buildConfigField 'String', 'VERSION_NAME', "\"$VERSION_NAME\""
+        buildConfigField 'String', 'VERSION_NAME', "\"$versionName\""
     }
 
     buildFeatures {
@@ -23,7 +23,7 @@ android {
 
 dependencies {
     api 'com.applovin:applovin-sdk:[13,14)'
-    api 'com.startapp:inapp-sdk:[5.0.1,6)'
+    api 'com.startapp:inapp-sdk:[5.2.0,6)'
 }
 
-apply from: "$rootDir/publish-mavencentral.gradle"
+apply from: 'https://raw.githubusercontent.com/StartApp-SDK/sonatype-central-publish/refs/heads/main/sonatype-central-publish.gradle'
