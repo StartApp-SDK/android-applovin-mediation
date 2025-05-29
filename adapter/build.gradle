@@ -23,7 +23,7 @@ android {
 
 dependencies {
     api 'com.applovin:applovin-sdk:[13,14)'
-    api 'com.startapp:inapp-sdk:[5.2.0,6)'
+    api 'com.startapp:inapp-sdk:[5.2.2,6)'
 }
 
 apply from: 'https://raw.githubusercontent.com/StartApp-SDK/sonatype-central-publish/refs/heads/main/sonatype-central-publish.gradle'
